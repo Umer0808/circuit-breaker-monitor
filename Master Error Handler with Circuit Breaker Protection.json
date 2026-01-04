@@ -1,0 +1,383 @@
+{
+  "name": "Master Error Handler with Circuit Breaker Protection",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "error-handler",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "d89fb78a-f2a2-4c77-8cb0-ed952104d484",
+      "name": "Error Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -6432,
+        976
+      ],
+      "webhookId": "8990be9c-c40c-459f-b1fc-fa45fbf0845a"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "errorThreshold",
+              "value": 10,
+              "type": "number"
+            },
+            {
+              "id": "id-2",
+              "name": "errorTimeWindow",
+              "value": 60,
+              "type": "number"
+            },
+            {
+              "id": "id-3",
+              "name": "developerTag",
+              "value": "<__PLACEHOLDER_VALUE__Developer mention tag (e.g., @developer or <@USER_ID>)__>",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "36512fa3-f803-4c59-a299-65d65d7a9bea",
+      "name": "Workflow Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -6144,
+        960
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "workflowName",
+              "value": "={{ $json.body.workflowName || 'Unknown Workflow' }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "workflowId",
+              "value": "={{ $json.body.workflowId || 'Unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "errorMessage",
+              "value": "={{ $json.body.errorMessage || 'No error message provided' }}",
+              "type": "string"
+            },
+            {
+              "id": "id-4",
+              "name": "failedNodeName",
+              "value": "={{ $json.body.failedNodeName || 'Unknown Node' }}",
+              "type": "string"
+            },
+            {
+              "id": "id-5",
+              "name": "failedNodeType",
+              "value": "={{ $json.body.failedNodeType || 'Unknown Type' }}",
+              "type": "string"
+            },
+            {
+              "id": "id-6",
+              "name": "executionId",
+              "value": "={{ $json.body.executionId || 'Unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "id-7",
+              "name": "timestamp",
+              "value": "={{ $json.body.timestamp || $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "c641ccc4-67c9-4ba6-9b3e-f1c73bfe42c7",
+      "name": "Extract Error Details",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -5920,
+        960
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "id-1",
+              "leftValue": "={{ $json.errorCount }}",
+              "rightValue": "={{ $('Workflow Configuration').first().json.errorThreshold }}",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a45e1e7c-bd7e-4dd1-ae5a-a66e63d109e8",
+      "name": "Check Circuit Breaker Threshold",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -5472,
+        960
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get error details from previous nodes\nconst errorDetails = $input.first().json;\n\n// Extract configuration from Workflow Configuration node\nconst config = $('Workflow Configuration').first().json;\n\n// Format timestamp\nconst timestamp = new Date().toISOString();\n\n// Format error message for Discord/Slack\nconst formattedMessage = {\n  workflowName: errorDetails.workflowName || 'Unknown Workflow',\n  workflowId: errorDetails.workflowId || 'Unknown',\n  executionId: errorDetails.executionId || 'Unknown',\n  failedNode: errorDetails.failedNodeName || 'Unknown Node',\n  failedNodeType: errorDetails.failedNodeType || 'Unknown Type',\n  errorMessage: errorDetails.errorMessage || 'No error message provided',\n  timestamp: errorDetails.timestamp || timestamp,\n  developerTag: config.developerTag || '@developer',\n  \n  // Formatted message for Discord\n  discordMessage: `🚨 **Workflow Error Alert** 🚨\\n\\n` +\n    `**Workflow:** ${errorDetails.workflowName || 'Unknown Workflow'}\\n` +\n    `**Workflow ID:** ${errorDetails.workflowId || 'Unknown'}\\n` +\n    `**Execution ID:** ${errorDetails.executionId || 'Unknown'}\\n` +\n    `**Failed Node:** ${errorDetails.failedNodeName || 'Unknown Node'}\\n` +\n    `**Failed Node Type:** ${errorDetails.failedNodeType || 'Unknown Type'}\\n` +\n    `**Error Message:** ${errorDetails.errorMessage || 'No error message provided'}\\n` +\n    `**Timestamp:** ${errorDetails.timestamp || timestamp}\\n\\n` +\n    `${config.developerTag || '@developer'} - Please investigate this error.`,\n  \n  // Formatted message for Slack\n  slackMessage: `🚨 *Workflow Error Alert* 🚨\\n\\n` +\n    `*Workflow:* ${errorDetails.workflowName || 'Unknown Workflow'}\\n` +\n    `*Workflow ID:* ${errorDetails.workflowId || 'Unknown'}\\n` +\n    `*Execution ID:* ${errorDetails.executionId || 'Unknown'}\\n` +\n    `*Failed Node:* ${errorDetails.failedNodeName || 'Unknown Node'}\\n` +\n    `*Failed Node Type:* ${errorDetails.failedNodeType || 'Unknown Type'}\\n` +\n    `*Error Message:* ${errorDetails.errorMessage || 'No error message provided'}\\n` +\n    `*Timestamp:* ${errorDetails.timestamp || timestamp}\\n\\n` +\n    `${config.developerTag || '@developer'} - Please investigate this error.`\n};\n\nreturn [{ json: formattedMessage }];"
+      },
+      "id": "4127b4bf-249c-4cba-a967-309f13f11d1a",
+      "name": "Format Error Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -5248,
+        864
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0A6S65EU92",
+          "mode": "list",
+          "cachedResultName": "all-ai-automation"
+        },
+        "text": "={{ $json.slackMessage }}",
+        "otherOptions": {}
+      },
+      "id": "d3ee739d-e3d6-4458-9022-edebac2ff449",
+      "name": "Send Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        -5024,
+        960
+      ],
+      "webhookId": "76c136fc-52a8-4edf-9d56-8c651efe8ccb",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "YLUEVlpK1zAkfNti",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://khalid28.app.n8n.cloud/api/v1/workflows/{{ $json.workflowId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "n8nApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"active\": false}",
+        "options": {}
+      },
+      "id": "7ced4eb8-a4f4-4b6d-9f06-17af82fda605",
+      "name": "Disable Source Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -5248,
+        1152
+      ],
+      "credentials": {
+        "n8nApi": {
+          "id": "mlmwyiwGFe5YztU5",
+          "name": "n8n account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Format circuit breaker alert message\nconst workflowConfig = $('Workflow Configuration').first().json;\nconst errorDetails = $('Extract Error Details').first().json;\nconst errorCount = $('Track Error Count in Memory').first().json.errorCount || 0;\n\nconst timestamp = new Date().toISOString();\n\n// Format Discord message\nconst discordMessage = `🚨 **CIRCUIT BREAKER TRIGGERED** 🚨\\n\\n` +\n  `**Workflow Disabled:** ${errorDetails.workflowName || 'Unknown Workflow'}\\n` +\n  `**Workflow ID:** ${errorDetails.workflowId || 'Unknown'}\\n\\n` +\n  `**Reason:** Error threshold exceeded\\n` +\n  `**Error Count:** ${errorCount} errors\\n` +\n  `**Threshold:** ${workflowConfig.errorThreshold || 10} errors\\n` +\n  `**Time Window:** ${workflowConfig.errorTimeWindow || 60} seconds\\n\\n` +\n  `**Last Error Details:**\\n` +\n  `- **Error Message:** ${errorDetails.errorMessage || 'N/A'}\\n` +\n  `- **Node:** ${errorDetails.failedNodeName || 'N/A'}\\n` +\n  `- **Node Type:** ${errorDetails.failedNodeType || 'N/A'}\\n` +\n  `- **Execution ID:** ${errorDetails.executionId || 'N/A'}\\n` +\n  `- **Timestamp:** ${errorDetails.timestamp || timestamp}\\n\\n` +\n  `**Action Taken:** The workflow has been automatically disabled to prevent further issues.\\n\\n` +\n  `**Next Steps:**\\n` +\n  `1. Investigate the root cause of the errors\\n` +\n  `2. Fix the underlying issue\\n` +\n  `3. Manually re-enable the workflow when ready\\n` +\n  `4. Monitor the workflow closely after re-enabling\\n\\n` +\n  `⚠️ **Manual intervention required to re-enable the workflow** ⚠️\\n\\n` +\n  `${workflowConfig.developerTag || '@developer'} - Immediate attention required!`;\n\n// Format Slack message\nconst slackMessage = `🚨 *CIRCUIT BREAKER TRIGGERED* 🚨\\n\\n` +\n  `*Workflow Disabled:* ${errorDetails.workflowName || 'Unknown Workflow'}\\n` +\n  `*Workflow ID:* ${errorDetails.workflowId || 'Unknown'}\\n\\n` +\n  `*Reason:* Error threshold exceeded\\n` +\n  `*Error Count:* ${errorCount} errors\\n` +\n  `*Threshold:* ${workflowConfig.errorThreshold || 10} errors\\n` +\n  `*Time Window:* ${workflowConfig.errorTimeWindow || 60} seconds\\n\\n` +\n  `*Last Error Details:*\\n` +\n  `• *Error Message:* ${errorDetails.errorMessage || 'N/A'}\\n` +\n  `• *Node:* ${errorDetails.failedNodeName || 'N/A'}\\n` +\n  `• *Node Type:* ${errorDetails.failedNodeType || 'N/A'}\\n` +\n  `• *Execution ID:* ${errorDetails.executionId || 'N/A'}\\n` +\n  `• *Timestamp:* ${errorDetails.timestamp || timestamp}\\n\\n` +\n  `*Action Taken:* The workflow has been automatically disabled to prevent further issues.\\n\\n` +\n  `*Next Steps:*\\n` +\n  `1. Investigate the root cause of the errors\\n` +\n  `2. Fix the underlying issue\\n` +\n  `3. Manually re-enable the workflow when ready\\n` +\n  `4. Monitor the workflow closely after re-enabling\\n\\n` +\n  `⚠️ *Manual intervention required to re-enable the workflow* ⚠️\\n\\n` +\n  `${workflowConfig.developerTag || '@developer'} - Immediate attention required!`;\n\nreturn [{\n  json: {\n    discordMessage: discordMessage,\n    slackMessage: slackMessage,\n    workflowId: errorDetails.workflowId,\n    workflowName: errorDetails.workflowName,\n    errorCount: errorCount,\n    threshold: workflowConfig.errorThreshold,\n    timestamp: timestamp,\n    severity: 'critical'\n  }\n}];"
+      },
+      "id": "d38417be-0ac7-49f1-8b69-df4f319aa091",
+      "name": "Format Circuit Breaker Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -5024,
+        1152
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0A6S65EU92",
+          "mode": "list",
+          "cachedResultName": "all-ai-automation"
+        },
+        "text": "={{ $json.slackMessage }}",
+        "otherOptions": {}
+      },
+      "id": "91901159-b4a2-440f-a271-580b5b61d855",
+      "name": "Send Circuit Breaker Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        -4800,
+        1056
+      ],
+      "webhookId": "d8eafd61-0c19-4dce-a33c-08cd7db62de9",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "YLUEVlpK1zAkfNti",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// In-memory circuit breaker tracking using global Map\n// Initialize global error tracking Map if it doesn't exist\nif (!global.workflowErrorTracking) {\n  global.workflowErrorTracking = new Map();\n}\n\n// Get error details and configuration\nconst errorDetails = $('Extract Error Details').first().json;\nconst config = $('Workflow Configuration').first().json;\n\nconst workflowId = errorDetails.workflowId || 'Unknown';\nconst errorTimeWindow = config.errorTimeWindow || 60; // seconds\nconst currentTimestamp = Date.now();\n\n// Get or initialize error timestamps array for this workflow\nif (!global.workflowErrorTracking.has(workflowId)) {\n  global.workflowErrorTracking.set(workflowId, []);\n}\n\nlet errorTimestamps = global.workflowErrorTracking.get(workflowId);\n\n// Add current error timestamp\nerrorTimestamps.push(currentTimestamp);\n\n// Clean up old errors outside the time window\nconst timeWindowMs = errorTimeWindow * 1000;\nconst cutoffTime = currentTimestamp - timeWindowMs;\n\nerrorTimestamps = errorTimestamps.filter(timestamp => timestamp > cutoffTime);\n\n// Update the Map with cleaned timestamps\nglobal.workflowErrorTracking.set(workflowId, errorTimestamps);\n\n// Count recent errors\nconst errorCount = errorTimestamps.length;\n\n// Return error count along with other details\nreturn [{\n  json: {\n    ...errorDetails,\n    errorCount: errorCount,\n    recentErrorTimestamps: errorTimestamps,\n    timeWindowSeconds: errorTimeWindow,\n    trackingTimestamp: currentTimestamp\n  }\n}];"
+      },
+      "id": "feb4f9f6-9e5c-48da-a259-6e280ab900a0",
+      "name": "Track Error Count in Memory",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -5696,
+        960
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error Webhook": {
+      "main": [
+        [
+          {
+            "node": "Workflow Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Configuration": {
+      "main": [
+        [
+          {
+            "node": "Extract Error Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Circuit Breaker Threshold": {
+      "main": [
+        [
+          {
+            "node": "Disable Source Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Error Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Error Message": {
+      "main": [
+        [
+          {
+            "node": "Send Slack Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disable Source Workflow": {
+      "main": [
+        [
+          {
+            "node": "Format Circuit Breaker Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Circuit Breaker Alert": {
+      "main": [
+        [
+          {
+            "node": "Send Circuit Breaker Slack Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Error Details": {
+      "main": [
+        [
+          {
+            "node": "Track Error Count in Memory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Track Error Count in Memory": {
+      "main": [
+        [
+          {
+            "node": "Check Circuit Breaker Threshold",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a27d5dea-b08c-44fb-8ac9-454fba6e927e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "525a40c3b4eb2e5a7f954b559df79748875a61aaf850394b75020b43ea8b787a"
+  },
+  "id": "GsYh9zHJkUhHfU0Z",
+  "tags": []
+}
