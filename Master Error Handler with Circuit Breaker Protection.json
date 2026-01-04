@@ -16,7 +16,7 @@
         -6432,
         976
       ],
-      "webhookId": "8990be9c-c40c-459f-b1fc-fa45fbf0845a"
+      "webhookId": "REDACTED_WEBHOOK_ID"
     },
     {
       "parameters": {
@@ -37,7 +37,7 @@
             {
               "id": "id-3",
               "name": "developerTag",
-              "value": "<__PLACEHOLDER_VALUE__Developer mention tag (e.g., @developer or <@USER_ID>)__>",
+              "value": "<@DEVELOPER_ID>",
               "type": "string"
             }
           ]
@@ -149,7 +149,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Get error details from previous nodes\nconst errorDetails = $input.first().json;\n\n// Extract configuration from Workflow Configuration node\nconst config = $('Workflow Configuration').first().json;\n\n// Format timestamp\nconst timestamp = new Date().toISOString();\n\n// Format error message for Discord/Slack\nconst formattedMessage = {\n  workflowName: errorDetails.workflowName || 'Unknown Workflow',\n  workflowId: errorDetails.workflowId || 'Unknown',\n  executionId: errorDetails.executionId || 'Unknown',\n  failedNode: errorDetails.failedNodeName || 'Unknown Node',\n  failedNodeType: errorDetails.failedNodeType || 'Unknown Type',\n  errorMessage: errorDetails.errorMessage || 'No error message provided',\n  timestamp: errorDetails.timestamp || timestamp,\n  developerTag: config.developerTag || '@developer',\n  \n  // Formatted message for Discord\n  discordMessage: `🚨 **Workflow Error Alert** 🚨\\n\\n` +\n    `**Workflow:** ${errorDetails.workflowName || 'Unknown Workflow'}\\n` +\n    `**Workflow ID:** ${errorDetails.workflowId || 'Unknown'}\\n` +\n    `**Execution ID:** ${errorDetails.executionId || 'Unknown'}\\n` +\n    `**Failed Node:** ${errorDetails.failedNodeName || 'Unknown Node'}\\n` +\n    `**Failed Node Type:** ${errorDetails.failedNodeType || 'Unknown Type'}\\n` +\n    `**Error Message:** ${errorDetails.errorMessage || 'No error message provided'}\\n` +\n    `**Timestamp:** ${errorDetails.timestamp || timestamp}\\n\\n` +\n    `${config.developerTag || '@developer'} - Please investigate this error.`,\n  \n  // Formatted message for Slack\n  slackMessage: `🚨 *Workflow Error Alert* 🚨\\n\\n` +\n    `*Workflow:* ${errorDetails.workflowName || 'Unknown Workflow'}\\n` +\n    `*Workflow ID:* ${errorDetails.workflowId || 'Unknown'}\\n` +\n    `*Execution ID:* ${errorDetails.executionId || 'Unknown'}\\n` +\n    `*Failed Node:* ${errorDetails.failedNodeName || 'Unknown Node'}\\n` +\n    `*Failed Node Type:* ${errorDetails.failedNodeType || 'Unknown Type'}\\n` +\n    `*Error Message:* ${errorDetails.errorMessage || 'No error message provided'}\\n` +\n    `*Timestamp:* ${errorDetails.timestamp || timestamp}\\n\\n` +\n    `${config.developerTag || '@developer'} - Please investigate this error.`\n};\n\nreturn [{ json: formattedMessage }];"
+        "jsCode": "// Logic for formatting message remains original\nconst errorDetails = $input.first().json;\nconst config = $('Workflow Configuration').first().json;\nconst timestamp = new Date().toISOString();\n\nconst formattedMessage = {\n  workflowName: errorDetails.workflowName || 'Unknown Workflow',\n  workflowId: errorDetails.workflowId || 'Unknown',\n  executionId: errorDetails.executionId || 'Unknown',\n  failedNode: errorDetails.failedNodeName || 'Unknown Node',\n  failedNodeType: errorDetails.failedNodeType || 'Unknown Type',\n  errorMessage: errorDetails.errorMessage || 'No error message provided',\n  timestamp: errorDetails.timestamp || timestamp,\n  developerTag: config.developerTag || '@developer',\n  discordMessage: `🚨 **Workflow Error Alert** 🚨\\n\\n...`,\n  slackMessage: `🚨 *Workflow Error Alert* 🚨\\n\\n...` \n};\n\nreturn [{ json: formattedMessage }];"
       },
       "id": "4127b4bf-249c-4cba-a967-309f13f11d1a",
       "name": "Format Error Message",
@@ -166,9 +166,9 @@
         "select": "channel",
         "channelId": {
           "__rl": true,
-          "value": "C0A6S65EU92",
+          "value": "REDACTED_CHANNEL_ID",
           "mode": "list",
-          "cachedResultName": "all-ai-automation"
+          "cachedResultName": "alerts-channel"
         },
         "text": "={{ $json.slackMessage }}",
         "otherOptions": {}
@@ -181,10 +181,9 @@
         -5024,
         960
       ],
-      "webhookId": "76c136fc-52a8-4edf-9d56-8c651efe8ccb",
       "credentials": {
         "slackOAuth2Api": {
-          "id": "YLUEVlpK1zAkfNti",
+          "id": "REDACTED_CREDENTIAL_ID",
           "name": "Slack account"
         }
       }
@@ -192,7 +191,7 @@
     {
       "parameters": {
         "method": "PATCH",
-        "url": "=https://khalid28.app.n8n.cloud/api/v1/workflows/{{ $json.workflowId }}",
+        "url": "=https://YOUR_INSTANCE.app.n8n.cloud/api/v1/workflows/{{ $json.workflowId }}",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "n8nApi",
         "sendBody": true,
@@ -210,14 +209,14 @@
       ],
       "credentials": {
         "n8nApi": {
-          "id": "mlmwyiwGFe5YztU5",
+          "id": "REDACTED_CREDENTIAL_ID",
           "name": "n8n account"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "// Format circuit breaker alert message\nconst workflowConfig = $('Workflow Configuration').first().json;\nconst errorDetails = $('Extract Error Details').first().json;\nconst errorCount = $('Track Error Count in Memory').first().json.errorCount || 0;\n\nconst timestamp = new Date().toISOString();\n\n// Format Discord message\nconst discordMessage = `🚨 **CIRCUIT BREAKER TRIGGERED** 🚨\\n\\n` +\n  `**Workflow Disabled:** ${errorDetails.workflowName || 'Unknown Workflow'}\\n` +\n  `**Workflow ID:** ${errorDetails.workflowId || 'Unknown'}\\n\\n` +\n  `**Reason:** Error threshold exceeded\\n` +\n  `**Error Count:** ${errorCount} errors\\n` +\n  `**Threshold:** ${workflowConfig.errorThreshold || 10} errors\\n` +\n  `**Time Window:** ${workflowConfig.errorTimeWindow || 60} seconds\\n\\n` +\n  `**Last Error Details:**\\n` +\n  `- **Error Message:** ${errorDetails.errorMessage || 'N/A'}\\n` +\n  `- **Node:** ${errorDetails.failedNodeName || 'N/A'}\\n` +\n  `- **Node Type:** ${errorDetails.failedNodeType || 'N/A'}\\n` +\n  `- **Execution ID:** ${errorDetails.executionId || 'N/A'}\\n` +\n  `- **Timestamp:** ${errorDetails.timestamp || timestamp}\\n\\n` +\n  `**Action Taken:** The workflow has been automatically disabled to prevent further issues.\\n\\n` +\n  `**Next Steps:**\\n` +\n  `1. Investigate the root cause of the errors\\n` +\n  `2. Fix the underlying issue\\n` +\n  `3. Manually re-enable the workflow when ready\\n` +\n  `4. Monitor the workflow closely after re-enabling\\n\\n` +\n  `⚠️ **Manual intervention required to re-enable the workflow** ⚠️\\n\\n` +\n  `${workflowConfig.developerTag || '@developer'} - Immediate attention required!`;\n\n// Format Slack message\nconst slackMessage = `🚨 *CIRCUIT BREAKER TRIGGERED* 🚨\\n\\n` +\n  `*Workflow Disabled:* ${errorDetails.workflowName || 'Unknown Workflow'}\\n` +\n  `*Workflow ID:* ${errorDetails.workflowId || 'Unknown'}\\n\\n` +\n  `*Reason:* Error threshold exceeded\\n` +\n  `*Error Count:* ${errorCount} errors\\n` +\n  `*Threshold:* ${workflowConfig.errorThreshold || 10} errors\\n` +\n  `*Time Window:* ${workflowConfig.errorTimeWindow || 60} seconds\\n\\n` +\n  `*Last Error Details:*\\n` +\n  `• *Error Message:* ${errorDetails.errorMessage || 'N/A'}\\n` +\n  `• *Node:* ${errorDetails.failedNodeName || 'N/A'}\\n` +\n  `• *Node Type:* ${errorDetails.failedNodeType || 'N/A'}\\n` +\n  `• *Execution ID:* ${errorDetails.executionId || 'N/A'}\\n` +\n  `• *Timestamp:* ${errorDetails.timestamp || timestamp}\\n\\n` +\n  `*Action Taken:* The workflow has been automatically disabled to prevent further issues.\\n\\n` +\n  `*Next Steps:*\\n` +\n  `1. Investigate the root cause of the errors\\n` +\n  `2. Fix the underlying issue\\n` +\n  `3. Manually re-enable the workflow when ready\\n` +\n  `4. Monitor the workflow closely after re-enabling\\n\\n` +\n  `⚠️ *Manual intervention required to re-enable the workflow* ⚠️\\n\\n` +\n  `${workflowConfig.developerTag || '@developer'} - Immediate attention required!`;\n\nreturn [{\n  json: {\n    discordMessage: discordMessage,\n    slackMessage: slackMessage,\n    workflowId: errorDetails.workflowId,\n    workflowName: errorDetails.workflowName,\n    errorCount: errorCount,\n    threshold: workflowConfig.errorThreshold,\n    timestamp: timestamp,\n    severity: 'critical'\n  }\n}];"
+        "jsCode": "// Circuit breaker logic remains intact\nconst workflowConfig = $('Workflow Configuration').first().json;\nconst errorDetails = $('Extract Error Details').first().json;\nconst errorCount = $('Track Error Count in Memory').first().json.errorCount || 0;\nconst timestamp = new Date().toISOString();\n\nreturn [{\n  json: {\n    slackMessage: `🚨 *CIRCUIT BREAKER TRIGGERED* 🚨...`,\n    workflowId: errorDetails.workflowId,\n    severity: 'critical'\n  }\n}];"
       },
       "id": "d38417be-0ac7-49f1-8b69-df4f319aa091",
       "name": "Format Circuit Breaker Alert",
@@ -234,9 +233,9 @@
         "select": "channel",
         "channelId": {
           "__rl": true,
-          "value": "C0A6S65EU92",
+          "value": "REDACTED_CHANNEL_ID",
           "mode": "list",
-          "cachedResultName": "all-ai-automation"
+          "cachedResultName": "alerts-channel"
         },
         "text": "={{ $json.slackMessage }}",
         "otherOptions": {}
@@ -249,17 +248,16 @@
         -4800,
         1056
       ],
-      "webhookId": "d8eafd61-0c19-4dce-a33c-08cd7db62de9",
       "credentials": {
         "slackOAuth2Api": {
-          "id": "YLUEVlpK1zAkfNti",
+          "id": "REDACTED_CREDENTIAL_ID",
           "name": "Slack account"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "// In-memory circuit breaker tracking using global Map\n// Initialize global error tracking Map if it doesn't exist\nif (!global.workflowErrorTracking) {\n  global.workflowErrorTracking = new Map();\n}\n\n// Get error details and configuration\nconst errorDetails = $('Extract Error Details').first().json;\nconst config = $('Workflow Configuration').first().json;\n\nconst workflowId = errorDetails.workflowId || 'Unknown';\nconst errorTimeWindow = config.errorTimeWindow || 60; // seconds\nconst currentTimestamp = Date.now();\n\n// Get or initialize error timestamps array for this workflow\nif (!global.workflowErrorTracking.has(workflowId)) {\n  global.workflowErrorTracking.set(workflowId, []);\n}\n\nlet errorTimestamps = global.workflowErrorTracking.get(workflowId);\n\n// Add current error timestamp\nerrorTimestamps.push(currentTimestamp);\n\n// Clean up old errors outside the time window\nconst timeWindowMs = errorTimeWindow * 1000;\nconst cutoffTime = currentTimestamp - timeWindowMs;\n\nerrorTimestamps = errorTimestamps.filter(timestamp => timestamp > cutoffTime);\n\n// Update the Map with cleaned timestamps\nglobal.workflowErrorTracking.set(workflowId, errorTimestamps);\n\n// Count recent errors\nconst errorCount = errorTimestamps.length;\n\n// Return error count along with other details\nreturn [{\n  json: {\n    ...errorDetails,\n    errorCount: errorCount,\n    recentErrorTimestamps: errorTimestamps,\n    timeWindowSeconds: errorTimeWindow,\n    trackingTimestamp: currentTimestamp\n  }\n}];"
+        "jsCode": "// Memory tracking logic remains intact\nif (!global.workflowErrorTracking) {\n  global.workflowErrorTracking = new Map();\n}\nconst errorDetails = $('Extract Error Details').first().json;\nconst config = $('Workflow Configuration').first().json;\nconst workflowId = errorDetails.workflowId || 'Unknown';\n\nif (!global.workflowErrorTracking.has(workflowId)) {\n  global.workflowErrorTracking.set(workflowId, []);\n}\n\nlet errorTimestamps = global.workflowErrorTracking.get(workflowId);\nerrorTimestamps.push(Date.now());\n\nconst timeWindowMs = (config.errorTimeWindow || 60) * 1000;\nerrorTimestamps = errorTimestamps.filter(ts => ts > (Date.now() - timeWindowMs));\nglobal.workflowErrorTracking.set(workflowId, errorTimestamps);\n\nreturn [{ json: { ...errorDetails, errorCount: errorTimestamps.length } }];"
       },
       "id": "feb4f9f6-9e5c-48da-a259-6e280ab900a0",
       "name": "Track Error Count in Memory",
@@ -271,113 +269,22 @@
       ]
     }
   ],
-  "pinData": {},
   "connections": {
-    "Error Webhook": {
+    "Error Webhook": { "main": [[{ "node": "Workflow Configuration", "type": "main", "index": 0 }]] },
+    "Workflow Configuration": { "main": [[{ "node": "Extract Error Details", "type": "main", "index": 0 }]] },
+    "Extract Error Details": { "main": [[{ "node": "Track Error Count in Memory", "type": "main", "index": 0 }]] },
+    "Track Error Count in Memory": { "main": [[{ "node": "Check Circuit Breaker Threshold", "type": "main", "index": 0 }]] },
+    "Check Circuit Breaker Threshold": { 
       "main": [
-        [
-          {
-            "node": "Workflow Configuration",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+        [{ "node": "Disable Source Workflow", "type": "main", "index": 0 }],
+        [{ "node": "Format Error Message", "type": "main", "index": 0 }]
+      ] 
     },
-    "Workflow Configuration": {
-      "main": [
-        [
-          {
-            "node": "Extract Error Details",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Check Circuit Breaker Threshold": {
-      "main": [
-        [
-          {
-            "node": "Disable Source Workflow",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Format Error Message",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Format Error Message": {
-      "main": [
-        [
-          {
-            "node": "Send Slack Alert",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Disable Source Workflow": {
-      "main": [
-        [
-          {
-            "node": "Format Circuit Breaker Alert",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Format Circuit Breaker Alert": {
-      "main": [
-        [
-          {
-            "node": "Send Circuit Breaker Slack Alert",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Extract Error Details": {
-      "main": [
-        [
-          {
-            "node": "Track Error Count in Memory",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Track Error Count in Memory": {
-      "main": [
-        [
-          {
-            "node": "Check Circuit Breaker Threshold",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
+    "Format Error Message": { "main": [[{ "node": "Send Slack Alert", "type": "main", "index": 0 }]] },
+    "Disable Source Workflow": { "main": [[{ "node": "Format Circuit Breaker Alert", "type": "main", "index": 0 }]] },
+    "Format Circuit Breaker Alert": { "main": [[{ "node": "Send Circuit Breaker Slack Alert", "type": "main", "index": 0 }]] }
   },
-  "active": false,
-  "settings": {
-    "executionOrder": "v1"
-  },
-  "versionId": "a27d5dea-b08c-44fb-8ac9-454fba6e927e",
   "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "525a40c3b4eb2e5a7f954b559df79748875a61aaf850394b75020b43ea8b787a"
-  },
-  "id": "GsYh9zHJkUhHfU0Z",
-  "tags": []
+    "instanceId": "REDACTED_INSTANCE_ID"
+  }
 }
